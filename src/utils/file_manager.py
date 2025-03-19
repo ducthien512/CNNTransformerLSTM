@@ -85,7 +85,7 @@ def load_model(model_architecture: str, sub_model_name: str = None, custom_objec
     full_model_name = f"{augmentation_prefix}{sub_model_name}"
 
     model_file_folder = f"{file_utils.TRAINED_MODELS_FOLDER}{model_architecture}/"
-    model_file_path = f"{model_file_folder}{full_model_name}_{config.data_type_suffix()}"
+    model_file_path = f"{model_file_folder}{full_model_name}_{config.data_type_suffix()}.h5"
 
     if file_utils.exists(model_file_path) and config.use_pre_trained_models:
         log.info(f"Loading already pretrained model from {model_file_path}.")
@@ -107,13 +107,14 @@ def save_model(model_architecture: str, model: Model, augmentation_name: str = '
     augmentation_prefix = f"{augmentation_name}_" if augmentation_name else ''
     full_model_name = f"{augmentation_prefix}{model.name}"
 
-    model_file_path = f"{model_file_folder}{full_model_name}_{config.data_type_suffix()}"
-    log.info(f"Saving trained model {model.name} configuration to file {model_file_path}.")
-    model.save(model_file_path)
+    model_h5_path = f"{model_file_folder}{full_model_name}_{config.data_type_suffix()}.h5"
+
+    log.info(f"Saving trained model {model.name} as HDF5 file {model_h5_path}.")
+    model.save(model_h5_path)
 
 
 def save_temporary_fold_model(model: Model, fold: int) -> None:
-    file_path = f"{file_utils.FOLD_MODEL_FILE_NAME}_{fold}"
+    file_path = f"{file_utils.FOLD_MODEL_FILE_NAME}_{fold}.h5"
     log.info(f"Saving temporary train model {model.name} of fold {fold} to file {file_path}.")
     model.save(file_path)
 
@@ -121,9 +122,9 @@ def save_temporary_fold_model(model: Model, fold: int) -> None:
 def load_temporary_fold_model(fold: int, remove=False, custom_objects: dict = None) -> Model:
     model = None
     try:
-        log.info(f"Loading temporary train model for fold {fold}.")
-        model = keras.models.load_model(f"{file_utils.FOLD_MODEL_FILE_NAME}_{fold}", compile=False,
-                                        custom_objects=custom_objects)
+        file_path = f"{file_utils.FOLD_MODEL_FILE_NAME}_{fold}.h5"
+        log.info(f"Loading temporary train model for fold {fold} from {file_path}.")
+        model = keras.models.load_model(file_path, compile=False, custom_objects=custom_objects)
         if remove:
             remove_temporary_fold_model(fold)
     except IOError or ImportError as e:
@@ -163,8 +164,9 @@ def load_model_prediction(fold: int) -> np.ndarray:
 
 
 def remove_temporary_fold_model(fold: int) -> None:
+    file_path = f"{file_utils.FOLD_MODEL_FILE_NAME}_{fold}.h5"
     log.info(f"Removing temporary trained model for fold {fold}.")
-    file_utils.remove_folder(f"{file_utils.FOLD_MODEL_FILE_NAME}_{fold}")
+    file_utils.remove_file(file_path)
 
 
 def remove_temporary_fold_history(fold: int) -> None:
